@@ -1,6 +1,6 @@
-var ctx, canvas, audioCtx, audio, audioSrc, bufferSrc, analyser, frequencyData, settings, settingsOpen, microphone,
-lines, lineAmount, lineWidth, lineSpaceing, lineColor1, lineColor2, lineColor3, bgColor, rotation, bump,
-screenMid;
+var ctx, canvas, audioCtx, audio, audioSrc, bufferSrc, analyser, frequencyData,  settingsOpen, microphone,
+lines, lineAmount, lineWidth, lineSpaceing, lineColor1, lineColor2, lineColor3, bgColor, rotation, bump, pulsation,
+screenMid, settings, col2Pckr, col3Pckr, pulseCB;
 
 function setup() {
 	var i;
@@ -46,6 +46,7 @@ function setup() {
 	bgColor = "rgba(133, 191, 137, 0.3)";
 	rotation = Math.PI;
 	bump = 0;
+	pulsation = true;
 
 	lines = []; //Stores a number between 0 and 1 for each line. 0 = Compl. retracted; 1 = full circle
 	for (i = 0; i < lineAmount; i++) {
@@ -66,6 +67,31 @@ function setup() {
 
 	document.getElementById('fileIn').addEventListener('change', playFile, false);
 	document.body.addEventListener('drop', playFile, false);
+
+	col2Pckr = document.getElementById('col2');
+	col3Pckr = document.getElementById('col3');
+	pulseCB = document.getElementById('pulsating');
+
+	col2Pckr.addEventListener("change",
+		function() {
+			lineColor2 = hexToRgba(this.value);
+		}
+		, false);
+
+	col3Pckr.addEventListener("change",
+		function() {
+			lineColor3 = hexToRgba(this.value);
+		}
+		, false);
+
+	pulseCB.addEventListener("change",
+		function() {
+			pulsation = this.checked;
+			if (!this.checked) {
+				lineSpacing = 5;
+			}
+		}
+		, false);
 
 	//fileIn.addEventListener("change",
 	//	function() {
@@ -89,11 +115,13 @@ function tick() {
 	requestAnimationFrame(tick); //Repeat
 	analyser.getByteFrequencyData(frequencyData); //Frequency Data right now
 
-	//To make the circle and background grow to the beat:
-	bump = Math.pow(frequencyData[17], 1) / 256;
-	lineSpacing = (2 * lineSpacing + 5 + 2 * (((frequencyData[17] + frequencyData[27]) / 2) / 256)) / 3;
-	//lineSpacing = (2 * lineSpacing + 5 + Math.round(24 * ((Math.abs(frequencyData[28] + frequencyData[30]) / 2) / 256))) / 3;
-	//if (lineSpacing > 5) {lineSpacing = Math.round(lineSpacing / 1.3);}
+	if (pulsation) {
+		//To make the circle and background grow to the beat:
+		bump = Math.pow(frequencyData[17], 1) / 256;
+		lineSpacing = (2 * lineSpacing + 5 + 2 * (((frequencyData[17] + frequencyData[27]) / 2) / 256)) / 3;
+		//lineSpacing = (2 * lineSpacing + 5 + Math.round(24 * ((Math.abs(frequencyData[28] + frequencyData[30]) / 2) / 256))) / 3;
+		//if (lineSpacing > 5) {lineSpacing = Math.round(lineSpacing / 1.3);}
+	}
 
 	//Read data to visualization...
 	for (i = 0; i < lineAmount; i++) {
@@ -110,19 +138,21 @@ function drawLines() {
 	
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-	//Draw Background
-	grd = ctx.createRadialGradient(screenMid.x, screenMid.y, 0, screenMid.x, screenMid.y, 1000 * bump);
-	grd.addColorStop(0, bgColor);
-	grd.addColorStop(1, "rgba(0, 0, 0, 0)");
-	ctx.fillStyle = grd;
-	ctx.beginPath();
-	ctx.arc(
-				screenMid.x,
-				screenMid.y,
-				1000 * bump,
-				0,
-				2 * Math.PI, false);
-	ctx.fill();
+	if (pulsation) {
+		//Draw Background
+		grd = ctx.createRadialGradient(screenMid.x, screenMid.y, 0, screenMid.x, screenMid.y, 1000 * bump);
+		grd.addColorStop(0, bgColor);
+		grd.addColorStop(1, "rgba(0, 0, 0, 0)");
+		ctx.fillStyle = grd;
+		ctx.beginPath();
+		ctx.arc(
+					screenMid.x,
+					screenMid.y,
+					1000 * bump,
+					0,
+					2 * Math.PI, false);
+		ctx.fill();
+	}
 
 
 	//Draw Circles
@@ -209,6 +239,16 @@ function getColor(col1, col2, pos) {
 
 	return {col: {r: nR, g: nG, b: nB, a: nA},
 			string: "rgba(" + String(nR) + ", " + String(nG) + ", " + String(nB) + ", "  + String(nA) + ")"};
+}
+
+function hexToRgba(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+        a: 1
+    } : null;
 }
 
 window.onload = function () {
