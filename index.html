@@ -9,7 +9,23 @@
 </head>
 <body>
 	<canvas id="board"></canvas>
-	<audio id="player" controls></audio>
-	<div id="credits">Made by <a href="https://twitter.com/jmb2624">Jannis Becker</a> in 2014, based on an idea by <a href="http://imgur.com/user/bmdl">bmdl</a> on imgur.
+	<div id="settings">
+		<a id="settingsBtn" onclick="togglesettings()"></a>
+		<audio id="player" controls></audio>
+		<div id="inputs">
+			<div id="fileInBtn" class="option first">
+				Load Music
+				<input type="file" id="fileIn" class="option first">
+			</div>
+			<!--<a onclick="useMic()" id="micIn" class="option">Microphone</a>-->
+			<a onclick='playDemo("Aces High.mp3")' id="demoIn" class="option last">Play Demo</a>
+			
+		</div> 
+		
+		<div id="credits">
+			Made by <a href="https://twitter.com/jmb2624">Jannis Becker</a> in 2014, based on an idea by <a href="http://imgur.com/user/bmdl">bmdl</a> on imgur.<br>
+			Demo Song: <i>Aces High</i> by <a href="http://incompetech.com/">Kevin MacLeod</a>.
+		</div>
+	</div>
 </body>
 </html>

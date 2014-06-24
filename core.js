@@ -1,5 +1,5 @@
-var ctx, canvas, audioCtx, audio, audioSrc, analyser, frequencyData,
-lines, lineAmount, lineWidth, lineSpaceing, lineColor, rotation,
+var ctx, canvas, audioCtx, audio, audioSrc, bufferSrc, analyser, frequencyData, settings, settingsOpen, microphone,
+lines, lineAmount, lineWidth, lineSpaceing, lineColor1, lineColor2, lineColor3, bgColor, rotation, bump,
 screenMid;
 
 function setup() {
@@ -12,18 +12,26 @@ function setup() {
 	ctx = canvas.getContext('2d');
 
 	audio = document.getElementById('player');
-	audio.setAttribute('src', "you will be perfect.mp3");
-	audio.setAttribute('src', "Hustle.mp3");
+	//audio.setAttribute('src', "you will be perfect.mp3");
+	//audio.setAttribute('src', "Hustle.mp3");
 	audioCtx = new (window.AudioContext || window.webkitAudioContext);
-	audioSrc = audioCtx.createMediaElementSource(audio);
-	audioSrc.connect(audioCtx.destination);
+
 	analyser = audioCtx.createAnalyser();
   	analyser.fftSize = 64;
-  	audioSrc.connect(analyser);
+
+	audioSrc = audioCtx.createMediaElementSource(audio);
+	bufferSrc = audioCtx.createBufferSource();
+
+	audioSrc.connect(audioCtx.destination);
+	audioSrc.connect(analyser);
+	bufferSrc.connect(audioCtx.destination);
+	bufferSrc.connect(analyser);
+
+  	
   	frequencyData = new Uint8Array(analyser.frequencyBinCount);
 
-  	//Woop-di-doo
-  	audio.play();
+  	settings = document.getElementById('settings');
+  	settingsOpen = true;
 
   	//Calc the Screens center point (used later)
 	screenMid = {x : Math.round(canvas.width / 2), y : Math.round(canvas.height / 2)};
@@ -34,8 +42,10 @@ function setup() {
 	lineSpacing = 5;
 	lineColor1 = {r: 255, g: 255, b: 255, a: 0.5};
 	lineColor2 = {r: 133, g: 191, b: 37, a: 1}; //Upvote-Color!
-	lineColor3 = {r: 0, g: 191, b: 255, a: 1};
+	lineColor3 = {r: 50, g: 191, b: 200, a: 1};
+	bgColor = "rgba(133, 191, 137, 0.3)";
 	rotation = Math.PI;
+	bump = 0;
 
 	lines = []; //Stores a number between 0 and 1 for each line. 0 = Compl. retracted; 1 = full circle
 	for (i = 0; i < lineAmount; i++) {
@@ -53,6 +63,25 @@ function setup() {
 		screenMid.x = Math.round(canvas.width / 2);
 		screenMid.y = Math.round(canvas.height / 2);
 	}
+
+	document.getElementById('fileIn').addEventListener('change', playFile, false);
+	document.body.addEventListener('drop', playFile, false);
+
+	//fileIn.addEventListener("change",
+	//	function() {
+	//		var reader = new FileReader();
+//
+	//		reader.onload = function(ev) {
+	//				audioCtx.decodeAudioData(ev.target.result, function(buffer) {
+	//					console.log("hey");
+	//					bufferSrc.buffer = buffer;
+	//					bufferSrc.start();
+	//				});
+	//		};
+//
+	//		reader.readAsArrayBuffer(this.files[0]);
+	//		console.log(this.files[0]);
+	//	}, false);
 }
 
 function tick() {
@@ -60,15 +89,17 @@ function tick() {
 	requestAnimationFrame(tick); //Repeat
 	analyser.getByteFrequencyData(frequencyData); //Frequency Data right now
 
-	//To make the circle grow to the beat:
-	lineSpacing = (2 * lineSpacing + 5 + Math.round(24 * (frequencyData[27] / 256))) / 3;
-	if (lineSpacing > 5) {lineSpacing -= 2;}
+	//To make the circle and background grow to the beat:
+	bump = Math.pow(frequencyData[17], 1) / 256;
+	lineSpacing = (2 * lineSpacing + 5 + 2 * (((frequencyData[17] + frequencyData[27]) / 2) / 256)) / 3;
+	//lineSpacing = (2 * lineSpacing + 5 + Math.round(24 * ((Math.abs(frequencyData[28] + frequencyData[30]) / 2) / 256))) / 3;
+	//if (lineSpacing > 5) {lineSpacing = Math.round(lineSpacing / 1.3);}
 
-	//Read data to visualisation...
+	//Read data to visualization...
 	for (i = 0; i < lineAmount; i++) {
 		lines[/*lineAmount - 1 - */i] = frequencyData[i] / 256;
 	}
-	//rotation +=0.5
+	//rotation +=0.005
 
 	//...and draw the circles!
 	drawLines();
@@ -80,15 +111,15 @@ function drawLines() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 	//Draw Background
-	grd = ctx.createRadialGradient(screenMid.x, screenMid.y, 0, screenMid.x, screenMid.y, Math.pow(lineSpacing - 4, 4))
-	grd.addColorStop(0, "rgba(133, 191, 137, 0.4)");
+	grd = ctx.createRadialGradient(screenMid.x, screenMid.y, 0, screenMid.x, screenMid.y, 1000 * bump);
+	grd.addColorStop(0, bgColor);
 	grd.addColorStop(1, "rgba(0, 0, 0, 0)");
 	ctx.fillStyle = grd;
 	ctx.beginPath();
 	ctx.arc(
 				screenMid.x,
 				screenMid.y,
-				Math.pow(lineSpacing - 4, 4),
+				1000 * bump,
 				0,
 				2 * Math.PI, false);
 	ctx.fill();
@@ -102,6 +133,8 @@ function drawLines() {
 		
 
 		if (lines[i] === 0 || i === 0) {
+			//If the line is fully retracted, even the round caps aren't drawn, so we need to
+			//draw small circles in the specific case.
 			ctx.fillStyle = getColor(lineColor1, lineColor2, lines[i]).string;
 			ctx.beginPath();
 			//ctx.moveTo(screenMid.x, screenMid.y);
@@ -128,6 +161,43 @@ function drawLines() {
 
 		}
 	}
+}
+
+function playDemo(file) {
+	audio.setAttribute('src', file);
+	audio.play();
+}
+
+function playFile(evt) {
+	audio.pause();
+	evt.stopPropagation();
+    evt.preventDefault();
+    console.log(evt);
+    audio.setAttribute('src', URL.createObjectURL(evt.target.files[0]));
+    audio.play();
+}
+
+//function useMic() {
+//	audio.pause();
+//	navigator.getUserMedia = (navigator.getUserMedia ||
+//                          navigator.webkitGetUserMedia ||
+//                          navigator.mozGetUserMedia ||
+//                          navigator.msGetUserMedia);
+//	navigator.getUserMedia({audio: true}, 
+//		function(stream) {
+//			console.log(stream);
+//			microphone = audioCtx.createMediaStreamSource(stream);
+//			microphone.connect(analyser);
+//		},
+//		function(err) {
+//			console.log('The following gUM error occured: ' + err);
+//      	});
+//	
+//}
+
+function togglesettings() {
+	settings.style.marginBottom = "-" + settings.clientHeight * (settingsOpen ? 1 : 0) + "px";
+	settingsOpen = !settingsOpen;
 }
 
 function getColor(col1, col2, pos) {
