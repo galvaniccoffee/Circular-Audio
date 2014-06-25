@@ -1,4 +1,4 @@
-var ctx, canvas, audioCtx, audio, audioSrc, bufferSrc, analyser, frequencyData,  settingsOpen, microphone,
+var ctx, canvas, audioCtx, audio, audioSrc, analyser, frequencyData,  settingsOpen, microphone,
 lines, lineAmount, lineWidth, lineSpaceing, lineColor1, lineColor2, lineColor3, bgColor, rotation, bump, pulsation,
 screenMid, settings, col2Pckr, col3Pckr, pulseCB;
 

@@ -97,6 +97,7 @@ body {
 	float: left;
 	box-shadow: inset 0 4px 10px 1px rgba(255, 255, 255, 0.04),  0 2px 7px rgba(0, 0, 0, 0.8);
 	background: rgba(255, 255, 255, 0.02);
+	position: relative;
 
 	font-family: "Helvetica", "Arial";
 	color: rgba(255, 255, 255, 0.5);
